@@ -1,0 +1,4 @@
+.venv/
+__pycache__/
+*.pyc
+neon_rift_high_score.txt

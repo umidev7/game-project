@@ -70,7 +70,8 @@ class Star:
 class Particle:
 	def __init__(self, position, color, power=1):
 		self.position = pygame.Vector2(position)
-		self.velocity = pygame.Vector2.from_polar((random.uniform(35, 180) * power, random.randrange(360)))
+		self.velocity = pygame.Vector2(0, 0)
+		self.velocity.from_polar((random.uniform(35, 180) * power, random.randrange(360)))
 		self.life = self.max_life = random.uniform(.3, .8) * power
 		self.color, self.radius = color, random.uniform(1.5, 4) * power
 
@@ -105,9 +106,9 @@ class Explosion:
 
 
 class Bullet:
-	def __init__(self, position, velocity, color, friendly=True, damage=1, radius=4):
+	def __init__(self, position, velocity, color, damage=1, radius=4):
 		self.position, self.velocity = pygame.Vector2(position), pygame.Vector2(velocity)
-		self.color, self.friendly, self.damage, self.radius, self.alive = color, friendly, damage, radius, True
+		self.color, self.damage, self.radius, self.alive = color, damage, radius, True
 
 	def update(self, dt):
 		self.position += self.velocity * dt
@@ -117,6 +118,16 @@ class Bullet:
 		direction = self.velocity.normalize()
 		pygame.draw.line(surface, self.color, self.position - direction * 14, self.position, self.radius)
 		pygame.draw.circle(surface, WHITE, self.position, max(1, self.radius // 2))
+
+
+class PlayerBullet(Bullet):
+	def __init__(self, position, velocity, color=CYAN, damage=1, radius=4):
+		super().__init__(position, velocity, color, damage, radius)
+
+
+class EnemyBullet(Bullet):
+	def __init__(self, position, velocity, color, damage=1, radius=4):
+		super().__init__(position, velocity, color, damage, radius)
 
 
 class Player:
@@ -137,9 +148,9 @@ class Player:
 		if self.cooldown > 0:
 			return []
 		self.cooldown = max(.1, .22 - self.weapon_level * .025)
-		bullets = [Bullet((self.position.x, self.position.y - 25), (0, -780), CYAN, damage=self.weapon_level)]
+		bullets = [PlayerBullet((self.position.x, self.position.y - 25), (0, -780), damage=self.weapon_level)]
 		if self.weapon_level >= 2:
-			bullets += [Bullet(self.position - (14, 15), (-55, -760), BLUE), Bullet(self.position + (14, -15), (55, -760), BLUE)]
+			bullets += [PlayerBullet(self.position - (14, 15), (-55, -760), BLUE), PlayerBullet(self.position + (14, -15), (55, -760), BLUE)]
 		return bullets
 
 	def hit(self, damage):
@@ -183,7 +194,7 @@ class Enemy:
 			self.cooldown = random.uniform(1.3, 2.8) / min(2.1, 1 + level * .05)
 			vector = pygame.Vector2(target) - self.position
 			if vector.length_squared():
-				shots.append(Bullet(self.position + (0, self.width / 2), vector.normalize() * (200 + level * 7), self.color, False, 8 if self.kind == "tank" else 5))
+				shots.append(EnemyBullet(self.position + (0, self.width / 2), vector.normalize() * (200 + level * 7), self.color, 8 if self.kind == "tank" else 5))
 		if self.position.y > HEIGHT + 40:
 			self.alive = False
 		return shots
@@ -221,7 +232,7 @@ class Boss:
 		if self.cooldown <= 0:
 			self.cooldown = max(.35, 1.05 - self.level * .015)
 			for angle in (-.3, -.12, 0, .12, .3):
-				shots.append(Bullet(self.position + (0, 45), (math.sin(angle), math.cos(angle)), PINK, False, 12, 5))
+				shots.append(EnemyBullet(self.position + (0, 45), (math.sin(angle), math.cos(angle)), PINK, 12, 5))
 				shots[-1].velocity *= 245 + self.level * 6
 		return shots
 
@@ -324,12 +335,14 @@ class Game:
 
 	def collisions(self):
 		for bullet in self.bullets:
-			if not bullet.friendly:
+			if isinstance(bullet, EnemyBullet):
 				if bullet.position.distance_to(self.player.position) < 24:
 					bullet.alive = False
 					if self.player.hit(bullet.damage):
 						self.audio.play("hit")
 						self.explode(self.player.position, RED, .45)
+				continue
+			if not isinstance(bullet, PlayerBullet):
 				continue
 			for enemy in self.enemies:
 				if enemy.alive and bullet.position.distance_to(enemy.position) < enemy.width:

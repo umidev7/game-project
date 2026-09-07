@@ -2,18 +2,46 @@
 
 Neon Rift is a complete asset-free 2D space shooter built with Python and Pygame.
 
-## Run in VS Code
+## Install and Run on Windows
 
-1. Install Python 3.10 or newer.
-2. Open this folder in VS Code and select the Python interpreter.
-3. In the integrated terminal, run:
+1. Clone or download this GitHub repository.
+2. Open the project folder in VS Code.
+3. Open the integrated terminal.
+4. Create the virtual environment:
 
    ```powershell
-   py -m pip install -r requirements.txt
-   py test.py
+   uv venv
    ```
 
-   On systems where `python` is configured instead of `py`, use `python -m pip` and `python test.py`.
+5. Install the dependencies:
+
+   ```powershell
+   uv pip install -r requirements.txt
+   ```
+
+6. Run the game:
+
+   ```powershell
+   uv run python test.py
+   ```
+
+### Troubleshooting
+
+If you see `ModuleNotFoundError: No module named 'pygame'`, install the dependencies in the uv environment:
+
+```powershell
+uv pip install -r requirements.txt
+```
+
+If you see `externally-managed-environment`, do not install packages into the system Python with `pip`. Use `uv venv` and the uv commands above instead.
+
+## Project Structure
+
+- `README.md`: installation, controls, and project information.
+- `requirements.txt`: pinned Python dependencies.
+- `test.py`: main game entry point; run this file to start Neon Rift.
+- `space_game.py`: game implementation, including menus, levels, combat, sounds, and rendering.
+- `.gitignore`: files excluded from Git, including the virtual environment.
 
 ## Controls
 
